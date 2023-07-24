@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"forceConsistentCasingInFileNames": true,
+		"module": "CommonJS",
+		"esModuleInterop": true,
+		"moduleResolution": "Node",
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"allowJs": false,
+		"strict": false,
+		"outDir": "dist",
+		"target": "ES2015",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"exclude": ["node_modules"]
+}

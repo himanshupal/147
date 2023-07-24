@@ -1,0 +1,22 @@
+{
+  "name": "challenge-147",
+  "packageManager": "yarn@3.5.1",
+  "scripts": {
+    "dev": "node concurrently.dev.mjs"
+  },
+  "author": {
+    "name": "Himanshu Pal",
+    "email": "mailtohimanshupal@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:himanshupal/147.git"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
