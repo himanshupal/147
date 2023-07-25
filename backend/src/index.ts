@@ -1,5 +1,6 @@
 import useDatabase, { connectRedisClient } from "@/utils/database";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket, type RawData } from "ws";
+import type { IncomingData } from "challenge-147-types";
 import express from "express";
 
 const app = express();
@@ -40,8 +41,32 @@ app.use((req, res, next) => {
 // Set up a headless websocket server that prints any events sent to it.
 const wsServer = new WebSocketServer({ noServer: true });
 
+const handleIncomingMessage = function (this: WebSocket, data: RawData, isBinary: boolean) {
+	const message: IncomingData = JSON.parse(data.toString());
+	switch (message.event) {
+		case "join":
+			return wsServer.clients.forEach((client) => {
+				if (client.readyState === WebSocket.OPEN) {
+					client.send(data);
+				}
+			});
+		case "left":
+			return wsServer.clients.forEach((client) => {
+				if (client.readyState === WebSocket.OPEN) {
+					client.send(data);
+				}
+			});
+		case "message":
+			return wsServer.clients.forEach((client) => {
+				if (client.readyState === WebSocket.OPEN) {
+					client.send(data);
+				}
+			});
+	}
+};
+
 wsServer.on("connection", (socket) => {
-	socket.on("message", console.log);
+	socket.on("message", handleIncomingMessage);
 });
 
 // Start the normal HTTP server
@@ -68,6 +93,9 @@ const closeDatabaseConnection = async () => {
 	const redis = useDatabase();
 	try {
 		await redis.disconnect();
+		wsServer.clients.forEach((client) => {
+			client.close();
+		});
 		process.exit(0);
 	} catch (err) {
 		console.error("Database connection not closed:", err);

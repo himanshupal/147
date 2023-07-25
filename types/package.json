@@ -1,0 +1,5 @@
+{
+  "name": "challenge-147-types",
+  "packageManager": "yarn@3.5.1",
+  "main": "src/index.ts"
+}

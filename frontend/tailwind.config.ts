@@ -6,6 +6,7 @@ const config: Config = {
     extend: {
       minWidth: {
         150: '150px',
+        250: '250px',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
