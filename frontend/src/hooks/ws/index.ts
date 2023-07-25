@@ -26,22 +26,22 @@ const useWebSocket = (userId?: string) => {
       switch (message.event) {
         case 'join':
           const { event: _userEvent, ...userData } = message
-          return setUsers((u) => [...u, userData])
+          return setUsers((u) => {
+            if (u.some(({ userId }) => userId === userData.userId)) {
+              return u.map((user) => (user.userId === userData.userId ? { ...user, disconnected: '0' } : user))
+            } else {
+              return [...u, userData]
+            }
+          })
         case 'left':
           const { event: _leftEvent, ...leftUser } = message
-          return setUsers((users) =>
-            users.map((u) =>
-              u.userId === leftUser.userId
-                ? {
-                    ...u,
-                    disconnected: true,
-                  }
-                : u
-            )
-          )
+          return setUsers((users) => users.map((u) => (u.userId === leftUser.userId ? { ...u, disconnected: '1' } : u)))
         case 'message':
           const { event: _messageEvent, ...messageData } = message
           return setMessages((m) => [...m, messageData])
+        case 'connected':
+          setMessages((m) => [...m, ...message.messages])
+          return setUsers((u) => [...u, ...message.users])
       }
     }
   }, [])

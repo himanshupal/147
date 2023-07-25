@@ -9,7 +9,7 @@ export interface User {
   userId: string;
   username: string;
   joinedAt: number;
-  disconnected?: true;
+  disconnected: "1" | "0";
 }
 
 export interface UserJoined extends User {
@@ -28,4 +28,10 @@ export interface MessageReceived extends Message {
   event: "message";
 }
 
-export type IncomingData = UserJoined | UserLeft | MessageReceived;
+export interface Connected {
+  event: "connected";
+  messages: Message[];
+  users: User[];
+}
+
+export type IncomingData = UserJoined | UserLeft | MessageReceived | Connected;

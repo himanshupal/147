@@ -41,22 +41,50 @@ app.use((req, res, next) => {
 // Set up a headless websocket server that prints any events sent to it.
 const wsServer = new WebSocketServer({ noServer: true });
 
-const handleIncomingMessage = function (this: WebSocket, data: RawData, isBinary: boolean) {
+const handleIncomingMessage = async function (this: WebSocket, data: RawData, isBinary: boolean) {
+	const redis = useDatabase();
 	const message: IncomingData = JSON.parse(data.toString());
 	switch (message.event) {
 		case "join":
+			try {
+				await redis.hSet(`user:${message.userId}`, {
+					userId: message.userId,
+					username: message.username,
+					joinedAt: message.joinedAt,
+					disconnected: message.disconnected,
+				});
+			} catch (err) {
+				console.error("Failed saving user to redis...", err);
+			}
 			return wsServer.clients.forEach((client) => {
 				if (client.readyState === WebSocket.OPEN) {
 					client.send(data);
 				}
 			});
 		case "left":
+			try {
+				await redis.hSet(`user:${message.userId}`, {
+					disconnected: 1,
+				});
+			} catch (err) {
+				console.error("Failed updating user status...", err);
+			}
 			return wsServer.clients.forEach((client) => {
 				if (client.readyState === WebSocket.OPEN) {
 					client.send(data);
 				}
 			});
 		case "message":
+			try {
+				await redis.hSet(`message:${message.id}`, {
+					id: message.id,
+					from: message.from,
+					value: message.value,
+					timestamp: message.timestamp,
+				});
+			} catch (err) {
+				console.error("Failed saving message to redis...", err);
+			}
 			return wsServer.clients.forEach((client) => {
 				if (client.readyState === WebSocket.OPEN) {
 					client.send(data);
@@ -65,8 +93,25 @@ const handleIncomingMessage = function (this: WebSocket, data: RawData, isBinary
 	}
 };
 
-wsServer.on("connection", (socket) => {
+wsServer.on("connection", async (socket) => {
 	socket.on("message", handleIncomingMessage);
+
+	const redis = useDatabase();
+
+	const [userIds, { keys: messageIds }] = await Promise.all([
+		redis.keys(`user:*`),
+		redis.scan(0, {
+			MATCH: "message:*",
+			COUNT: 50,
+		}),
+	]);
+
+	const [users, messages] = await Promise.all([
+		Promise.all(userIds.map((k) => redis.hGetAll(k))),
+		Promise.all(messageIds.map((k) => redis.hGetAll(k))),
+	]);
+
+	socket.send(Buffer.from(JSON.stringify({ event: "connected", users, messages })));
 });
 
 // Start the normal HTTP server

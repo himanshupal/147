@@ -14,25 +14,32 @@ function Home() {
 
   const { ws, users, messages } = useWebSocket(currentUser?.userId)
   const userMap = useMemo(() => new Map(users.map((u) => [u.userId, u])), [users])
-  const connectedUsers = useMemo(() => users.filter((u) => !u.disconnected), [users])
+  const connectedUsers = useMemo(() => users.filter((u) => u.disconnected === '0'), [users])
+  const orderedMessages = useMemo(() => messages.sort((a, b) => a.timestamp - b.timestamp), [messages])
 
   useEffect(() => {
     const existingUser = window.localStorage.getItem(USER_LS_KEY)
     if (existingUser) {
-      setCurrentUser(JSON.parse(existingUser))
+      const userData: User = JSON.parse(existingUser)
+      setCurrentUser(userData)
+      const joiningData: UserJoined = { event: 'join', ...userData }
+      if (ws?.readyState === ws?.OPEN) {
+        ws?.send(JSON.stringify(joiningData))
+      }
     }
-  }, [])
+  }, [ws, ws?.readyState])
 
   const joinChat: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault()
     const user: User = {
       username,
+      disconnected: '0',
       userId: createId(),
       joinedAt: Date.now(),
     }
     setCurrentUser(user)
     const joiningData: UserJoined = { event: 'join', ...user }
-    // window.localStorage.setItem(USER_LS_KEY, JSON.stringify(user))
+    window.localStorage.setItem(USER_LS_KEY, JSON.stringify(user))
     ws?.send(JSON.stringify(joiningData))
   }
 
@@ -84,10 +91,10 @@ function Home() {
         </form>
       ) : (
         <div className="h-full w-full flex flex-col gap-4 p-8">
-          <div className="max-h-full h-full overflow-y-auto scroll-smooth rounded-md">
-            <div className="grow flex flex-col gap-4 justify-end">
-              {messages.length ? (
-                messages.map(({ id, from, value, timestamp }) => {
+          <div className="max-h-full h-full overflow-y-auto rounded-md">
+            <div className="grow h-100 flex flex-col gap-4 justify-end">
+              {orderedMessages.length ? (
+                orderedMessages.map(({ id, from, value, timestamp }) => {
                   const messageTime = dayjs.unix(Math.floor(timestamp / 1000))
                   const fromUser = userMap.get(from)
                   return (
