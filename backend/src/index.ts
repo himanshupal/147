@@ -1,13 +1,24 @@
 import useDatabase, { connectRedisClient } from "@/utils/database";
 import { WebSocketServer, WebSocket, type RawData } from "ws";
 import type { IncomingData } from "challenge-147-types";
+import { init } from "@paralleldrive/cuid2";
 import express from "express";
 
 const app = express();
 app.use(express.json());
 
+const getCuid = init({
+	length: 4,
+});
+
 /** Keeps track of if the server is ready to process incoming requests */
 let connected = false;
+
+/** Duration after which user can resend message */
+const expireDuration = 60 * 15;
+
+/** Amount of messages user can send in {expireDuration} time frame */
+const limitAmount = 15;
 
 const PORT = process.env.PORT || 5174;
 
@@ -47,12 +58,16 @@ const handleIncomingMessage = async function (this: WebSocket, data: RawData, is
 	switch (message.event) {
 		case "join":
 			try {
-				await redis.hSet(`user:${message.userId}`, {
-					userId: message.userId,
-					username: message.username,
-					joinedAt: message.joinedAt,
-					disconnected: message.disconnected,
-				});
+				const [previousKeys] = await Promise.all([
+					redis.keys(`limit:${message.userId}:*`),
+					redis.hSet(`user:${message.userId}`, {
+						userId: message.userId,
+						username: message.username,
+						joinedAt: message.joinedAt,
+						disconnected: message.disconnected,
+					}),
+				]);
+				this.send(Buffer.from(JSON.stringify({ event: "limit", previousKeys })));
 			} catch (err) {
 				console.error("Failed saving user to redis...", err);
 			}
@@ -76,12 +91,21 @@ const handleIncomingMessage = async function (this: WebSocket, data: RawData, is
 			});
 		case "message":
 			try {
-				await redis.hSet(`message:${message.id}`, {
-					id: message.id,
-					from: message.from,
-					value: message.value,
-					timestamp: message.timestamp,
-				});
+				const previousKeys = await redis.keys(`limit:${message.from}:*`);
+				if (previousKeys.length === limitAmount) {
+					return this.send(Buffer.from(JSON.stringify({ event: "limit", previousKeys })));
+				}
+				await Promise.all([
+					redis.hSet(`message:${message.id}`, {
+						id: message.id,
+						from: message.from,
+						value: message.value,
+						timestamp: message.timestamp,
+					}),
+					redis.set(`limit:${message.from}:${getCuid()}:${message.timestamp}`, 1, {
+						EX: expireDuration,
+					}),
+				]);
 			} catch (err) {
 				console.error("Failed saving message to redis...", err);
 			}

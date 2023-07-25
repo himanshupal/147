@@ -1,11 +1,16 @@
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import ReactDOM from 'react-dom/client'
+import React, { Fragment } from 'react'
 import App from '@/pages/Home'
 import '@/styles/index.css'
-import React from 'react'
 
 const root = document.getElementById('root')
 ReactDOM.createRoot(root!).render(
   <React.StrictMode>
-    <App />
+    <Fragment>
+      <App />
+      <ToastContainer />
+    </Fragment>
   </React.StrictMode>
 )

@@ -1,21 +1,29 @@
 import type { UserJoined, Message, User, MessageSent } from 'challenge-147-types'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { USER_LS_KEY, limitAmount } from '@/config'
 import clockIcon from '@/assets/icons/clock.svg'
 import { createId } from '@paralleldrive/cuid2'
 import sendIcon from '@/assets/icons/send.svg'
-import { USER_LS_KEY } from '@/config'
 import useWebSocket from '@/hooks/ws'
 import dayjs from 'dayjs'
 
 function Home() {
+  const messagesContainer = useRef<HTMLDivElement>(null)
   const [currentUser, setCurrentUser] = useState<User>()
   const [inputText, setInputText] = useState<string>('')
   const [username, setUsername] = useState<string>('')
 
-  const { ws, users, messages } = useWebSocket(currentUser?.userId)
+  const { ws, users, messages, pastTimestamps } = useWebSocket(currentUser?.userId)
   const userMap = useMemo(() => new Map(users.map((u) => [u.userId, u])), [users])
   const connectedUsers = useMemo(() => users.filter((u) => u.disconnected === '0'), [users])
   const orderedMessages = useMemo(() => messages.sort((a, b) => a.timestamp - b.timestamp), [messages])
+
+  useEffect(() => {
+    messagesContainer.current?.scroll({
+      behavior: 'smooth',
+      top: 0xfffffffffff,
+    })
+  }, [messages])
 
   useEffect(() => {
     const existingUser = window.localStorage.getItem(USER_LS_KEY)
@@ -91,7 +99,7 @@ function Home() {
         </form>
       ) : (
         <div className="h-full w-full flex flex-col gap-4 p-8">
-          <div className="max-h-full h-full overflow-y-auto rounded-md">
+          <div ref={messagesContainer} className="max-h-full h-full overflow-y-auto rounded-md">
             <div className="grow h-100 flex flex-col gap-4 justify-end">
               {orderedMessages.length ? (
                 orderedMessages.map(({ id, from, value, timestamp }) => {
@@ -117,7 +125,9 @@ function Home() {
           <div>
             <div className="flex gap-1 italic text-slate-300">
               <img src={clockIcon} alt="" width={12} height={12} />
-              Slowmode is enabled.
+              Slowmode is enabled.{' '}
+              {/* {!!pastTimestamps.length &&
+                `You'll be able to send ${limitAmount - pastTimestamps.length + 1} more message in ${restoreTTL[0]} minutes ${restoreTTL[1]} seconds`} */}
             </div>
             <form className="flex w-full gap-4" onSubmit={sendMessage}>
               <input
@@ -129,7 +139,7 @@ function Home() {
               />
               <button
                 className="rounded-full bg-slate-800 w-12 h-12 grid place-content-center outline outline-white outline-2 disabled:outline-none disabled:bg-slate-400"
-                disabled={!inputText}
+                disabled={!inputText || pastTimestamps.length === limitAmount}
                 type="submit"
               >
                 <img src={sendIcon} alt="Send" width={22} height={22} />

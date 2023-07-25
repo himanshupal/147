@@ -28,10 +28,20 @@ export interface MessageReceived extends Message {
   event: "message";
 }
 
+export interface Limit {
+  event: "limit";
+  previousKeys: string[];
+}
+
 export interface Connected {
   event: "connected";
   messages: Message[];
   users: User[];
 }
 
-export type IncomingData = UserJoined | UserLeft | MessageReceived | Connected;
+export type IncomingData =
+  | UserJoined
+  | UserLeft
+  | MessageReceived
+  | Connected
+  | Limit;
