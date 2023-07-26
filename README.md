@@ -1,3 +1,11 @@
+> This is a yarn monorepo setup
+
+To start the application locally under dev mode, install the dependencies using `yarn` and then use `yarn dev` in the terminal from project root directory.
+
+Requires a working redis node, whose address can be updated in [utils/database.ts](./backend/src/utils/database.ts)
+
+---
+
 ## PART 1: BACKEND
 
 ### Develop a Node.js API that:
