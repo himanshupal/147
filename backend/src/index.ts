@@ -94,7 +94,6 @@ const handleIncomingMessage = async function (this: WebSocket, data: RawData, is
 		case "message":
 			try {
 				const previousKeys = await redis.keys(`limit:${message.from}:*`);
-				console.log("Here", previousKeys);
 				if (previousKeys.length === limitAmount) {
 					return this.send(Buffer.from(JSON.stringify({ event: "limit", previousKeys })));
 				}
