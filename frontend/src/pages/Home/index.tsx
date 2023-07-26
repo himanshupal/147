@@ -68,17 +68,19 @@ function Home() {
   return (
     <div className="w-screen h-screen flex bg-slate-600">
       {/* Sidebar */}
-      <div className="w-96 p-8 bg-slate-700">
-        <h2 className="font-bold text-2xl mb-4">Users Connected</h2>
-        {!!connectedUsers.length && (
-          <div className="bg-slate-600 p-1.5 rounded-md flex flex-col gap-2">
-            {connectedUsers.map(({ userId, username }) => (
-              <div key={userId} className="p-1.5 bg-slate-700 rounded-md font-semibold">
-                {username} {userId === currentUser?.userId && '(You)'}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="w-96 p-8 bg-slate-700 flex flex-col gap-4">
+        <h2 className="font-bold text-2xl">Users Connected</h2>
+        <div className="h-full overflow-auto">
+          {!!connectedUsers.length && (
+            <div className="bg-slate-600 p-1.5 rounded-md flex flex-col gap-2">
+              {connectedUsers.map(({ userId, username }) => (
+                <div key={userId} className="p-1.5 bg-slate-700 rounded-md font-semibold">
+                  {username} {userId === currentUser?.userId && '(You)'}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages or Login */}
