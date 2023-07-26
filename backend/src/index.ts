@@ -59,6 +59,8 @@ const handleIncomingMessage = async function (this: WebSocket, data: RawData, is
 		case "join":
 			try {
 				const [previousKeys] = await Promise.all([
+					// This `previousData` data is being returned from here for future updates,
+					// if decided to show user the remaining time to send messages
 					redis.keys(`limit:${message.userId}:*`),
 					redis.hSet(`user:${message.userId}`, {
 						userId: message.userId,
@@ -92,6 +94,7 @@ const handleIncomingMessage = async function (this: WebSocket, data: RawData, is
 		case "message":
 			try {
 				const previousKeys = await redis.keys(`limit:${message.from}:*`);
+				console.log("Here", previousKeys);
 				if (previousKeys.length === limitAmount) {
 					return this.send(Buffer.from(JSON.stringify({ event: "limit", previousKeys })));
 				}
